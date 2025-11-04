@@ -1,0 +1,81 @@
+# ---------------------------------------------------------------------------
+# requirements.txt for the QuantumH2 (vqe-hydrogen) project.
+#
+# WHEN IS THIS FILE USED?
+#   Only at install time, by pip:
+#       pip install -r requirements.txt
+#   Python code does NOT import this file. It is read by the package
+#   manager, not by the application.
+#
+# WHAT GOES HERE AND WHY?
+#   Every library we `import` from our source code must appear here so that
+#   a fresh clone can be set up reproducibly. We pin LOWER BOUNDS (>=) of
+#   versions that are known to exist, instead of exact pins, because:
+#     - Exact pins (==) break when upstream ships a bugfix.
+#     - No pin at all breaks when upstream ships a breaking change.
+#   For a fully reproducible build, run after install:
+#       pip freeze > requirements.lock
+#   and commit the .lock file alongside this one.
+#
+# CATEGORIES BELOW:
+#   1. Qiskit stack  -- quantum circuits, simulators, algorithms.
+#   2. Chemistry     -- molecular integrals (classical side).
+#   3. Scientific    -- numerics, optimizers, plotting.
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# 1. Qiskit stack
+# ---------------------------------------------------------------------------
+
+# `qiskit` is the core SDK: QuantumCircuit, parameterized gates, primitives
+# (Estimator/Sampler), transpiler. Everything in our VQE loop ultimately
+# goes through this package.
+qiskit>=1.0
+
+# `qiskit-aer` is the high-performance classical simulator backend. We use
+# it to evaluate expectation values on both ideal and noisy simulators.
+# Required specifically for step 6 of the brief (noise modelling).
+qiskit-aer>=0.14
+
+# `qiskit-algorithms` provides VQE, NumPyMinimumEigensolver, and classical
+# optimizers (COBYLA, SPSA). It was split out of `qiskit` after 0.x, which
+# is why we list it separately.
+qiskit-algorithms>=0.3
+
+# `qiskit-nature` turns a molecule specification (geometry + basis) into a
+# qubit Hamiltonian via second quantization and fermion-to-qubit mappers
+# (Jordan-Wigner, parity). This is the "classical chemistry -> qubit op"
+# bridge. Used only by src/hamiltonian.py.
+qiskit-nature>=0.7
+
+
+# ---------------------------------------------------------------------------
+# 2. Chemistry driver
+# ---------------------------------------------------------------------------
+
+# `pyscf` is a classical electronic-structure package. qiskit-nature calls
+# it under the hood to compute one- and two-electron integrals for the
+# molecule. Without a driver, qiskit-nature has no integrals to work with.
+# Note: pyscf may require a C/Fortran toolchain on install; on macOS this
+# is usually satisfied by Xcode command-line tools.
+pyscf>=2.3
+
+
+# ---------------------------------------------------------------------------
+# 3. Scientific stack
+# ---------------------------------------------------------------------------
+
+# `numpy` is the universal array library; every Qiskit operator and
+# parameter vector ultimately lives in a numpy array.
+numpy>=1.24
+
+# `scipy` provides numerical routines. qiskit-algorithms' optimizers use
+# scipy under the hood for things like COBYLA.
+scipy>=1.11
+
+# `matplotlib` is used by src/plot.py to draw:
+#   (a) energy-vs-iteration convergence curves, and
+#   (b) final-error-vs-noise-strength curves.
+# Not imported anywhere else.
+matplotlib>=3.7
