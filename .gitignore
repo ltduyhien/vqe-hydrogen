@@ -90,7 +90,22 @@ outputs/
 
 
 # ---------------------------------------------------------------------------
-# 3. Editor / OS noise
+# 3. Project-internal docs (never shipped)
+# ---------------------------------------------------------------------------
+
+# DESCRIPTION.md is our internal working document: the build plan, the
+# architecture reasoning, the decision log, and anything we discuss while
+# building the project. It is intentionally NOT public-facing (README.md
+# plays that role). Keeping it ignored here has two effects:
+#   - `git add .` on dev will never stage it, so it cannot be committed.
+#   - Because it is untracked on dev, it cannot propagate to main via the
+#     "commit to main" workflow (merge can only move tracked files).
+# The file therefore lives only in the developer's working tree.
+DESCRIPTION.md
+
+
+# ---------------------------------------------------------------------------
+# 4. Editor / OS noise
 # ---------------------------------------------------------------------------
 
 # VS Code / Cursor per-user settings. Keep these local.
