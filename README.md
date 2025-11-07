@@ -1,126 +1,118 @@
-QuantumH2 — VQE for Hydrogen Storage Materials
+QuantumH2 - VQE for hydrogen storage materials
 
-A small, laptop-runnable Qiskit project that uses the Variational Quantum
-Eigensolver (VQE) to estimate the electronic ground-state energy of three
-molecules relevant to hydrogen-storage research:
+This project runs the Variational Quantum Eigensolver (VQE) from Qiskit
+against a few small molecules that come up in hydrogen-storage research:
+H2, LiH, and BeH2. Everything runs on a laptop using the qiskit-aer
+simulator, so no access to real quantum hardware is needed.
 
-- H₂ — 2 qubits after reduction; canonical benchmark.
-- LiH — 4 qubits; appears in hydrogen-storage studies.
-- BeH₂ — 6 qubits; pushes the size limit for a laptop.
+Qubit counts after the usual reductions:
 
-Every result is compared against the exact classical answer (Full
-Configuration Interaction via `NumPyMinimumEigensolver`) so the project has
-a concrete, checkable success metric.
+- H2: 2 qubits
+- LiH: 4 qubits
+- BeH2: 6 qubits (this is where the simulator starts to slow down)
 
-Runtime target: under 5 minutes on a laptop. No quantum hardware needed.
-
-
-Why hydrogen?
-
-- Hydrogen fuel cells are a real clean-energy technology.
-- The bottleneck is finding safe, dense materials to store hydrogen.
-- Designing such materials requires the ground-state energy of the
-  molecules involved, which is exactly what VQE targets.
-- H₂, LiH, and BeH₂ are canonical small test cases where published
-  reference values exist and the problem still fits on a simulator.
+For each molecule the VQE energy is compared against the exact answer from
+Full Configuration Interaction, computed by `NumPyMinimumEigensolver`, so
+there is a real number to check against instead of just "it converged".
 
 
-What one run produces
+Why bother
 
-1. A qubit Hamiltonian built from the molecule via `qiskit-nature` + PySCF.
-2. An energy-vs-iteration convergence curve from the VQE loop, plotted with
-   the exact FCI reference as a horizontal line.
-3. A final error number (VQE energy − FCI energy) in Hartree.
-4. Optionally, a noise-sweep plot showing how the final error grows with
-   increasing simulated gate error.
+Hydrogen fuel cells already work; the hard part is finding materials that
+store hydrogen safely and at useful densities. Designing those materials
+means computing accurate electronic energies, which is where classical
+methods get expensive. VQE is one of the near-term quantum algorithms
+people try on this class of problem, and H2 / LiH / BeH2 are the usual
+small test cases: published reference numbers exist, and the problems
+still fit on a simulator.
 
 
-Repository layout
+What a run produces
+
+One invocation of `main.py` does the following:
+
+1. Builds a qubit Hamiltonian for the chosen molecule using
+   `qiskit-nature`, with PySCF doing the classical integrals under the
+   hood.
+2. Runs VQE and records the energy at every optimizer iteration.
+3. Plots energy vs. iteration with the exact FCI energy drawn as a
+   horizontal reference line.
+4. Prints the final error, i.e. VQE energy minus FCI energy, in Hartree.
+5. If `--noise-sweep` is passed, repeats the run with a qiskit-aer noise
+   model at several gate-error levels and plots error vs. noise.
+
+
+Layout
 
 ```
 vqe-hydrogen/
-├── README.md              # this file
-├── requirements.txt       # pip dependencies (install-time only)
+├── README.md
+├── requirements.txt
 ├── .gitignore
-├── main.py                # CLI entry point
+├── main.py
 └── src/
-    ├── molecules.py       # geometries, basis sets, active-space config
-    ├── hamiltonian.py     # molecule -> qubit Hamiltonian
-    ├── ansatz.py          # parameterized circuit
-    ├── fci.py             # exact reference energy (classical)
-    ├── vqe_runner.py      # VQE loop + energy trace
-    ├── noise.py           # qiskit-aer noise models
-    └── plot.py            # convergence & noise plots
+    ├── molecules.py
+    ├── hamiltonian.py
+    ├── ansatz.py
+    ├── fci.py
+    ├── vqe_runner.py
+    ├── noise.py
+    └── plot.py
 ```
 
 
 Install
 
-1. Create an isolated environment:
+Use a virtualenv so you don't pollute system Python:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate        # macOS / Linux
 # .venv\Scripts\activate         # Windows
-```
-
-2. Install dependencies:
-
-```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+PySCF compiles native code on first install, so you need Xcode command
+line tools on macOS, or gcc / gfortran on Linux.
+
 
 Run
 
-- Smallest, fastest problem:
-
 ```bash
 python main.py --molecule H2
-```
-
-- Medium (still seconds on a laptop):
-
-```bash
 python main.py --molecule LiH
-```
-
-- Largest supported; a few minutes:
-
-```bash
 python main.py --molecule BeH2
-```
-
-- Noise study — sweep depolarizing error strength:
-
-```bash
 python main.py --molecule H2 --noise-sweep
 ```
 
+H2 finishes in a few seconds. LiH is slower. BeH2 is the slowest and can
+take a few minutes. The noise sweep runs the whole VQE loop several
+times, so it is the most expensive option.
 
-Expected accuracy
 
-- With a hardware-efficient ansatz of sufficient depth and COBYLA/SPSA, VQE
-  should reach chemical accuracy (≈ 1.6 × 10⁻³ Hartree) relative to FCI on
-  the ideal simulator for all three molecules.
-- Under noise, the error grows roughly linearly with the two-qubit gate
-  error rate; the noise-sweep plot makes that trend visible.
+Accuracy
+
+On the ideal simulator, a hardware-efficient ansatz with enough depth plus
+COBYLA or SPSA reaches chemical accuracy (about 1.6e-3 Hartree) for all
+three molecules. With noise on, the final error grows roughly with the
+two-qubit gate error rate; the noise-sweep plot makes that visible.
 
 
 Branches
 
-- `dev` is the active development branch; source files carry full inline
-  comments.
-- `main` holds the same commits as `dev` with comments stripped — the clean
-  "library" view. Read `dev` to understand the code; read `main` for the
-  terse version.
+There are two long-lived branches:
+
+- `dev` is where work happens. Source files are heavily commented.
+- `main` has the same commits and messages as `dev`, but with comments
+  stripped out. Treat `main` as the clean view and `dev` as the annotated
+  one.
 
 
 References
 
-- Peruzzo et al., "A variational eigenvalue solver on a photonic quantum
-  processor", Nature Communications 5, 4213 (2014).
-- Kandala et al., "Hardware-efficient variational quantum eigensolver for
-  small molecules and quantum magnets", Nature 549, 242–246 (2017).
-- Qiskit Nature documentation: https://qiskit-community.github.io/qiskit-nature/
+- Peruzzo et al., A variational eigenvalue solver on a photonic quantum
+  processor, Nature Communications 5, 4213 (2014).
+- Kandala et al., Hardware-efficient variational quantum eigensolver for
+  small molecules and quantum magnets, Nature 549, 242-246 (2017).
+- Qiskit Nature: https://qiskit-community.github.io/qiskit-nature/
