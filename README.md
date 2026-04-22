@@ -105,17 +105,6 @@ three molecules. With noise on, the final error grows roughly with the
 two-qubit gate error rate; the noise-sweep plot makes that visible.
 
 
-Branches
-
-There are two long-lived branches:
-
-- `dev` is where work happens. Source files carry detailed, teaching-style
-  comments.
-- `main` has the same commits and messages, but with the comments
-  rewritten short and to the point. Treat `main` as the clean view and
-  `dev` as the annotated one.
-
-
 References
 
 - Peruzzo et al., A variational eigenvalue solver on a photonic quantum
