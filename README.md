@@ -18,7 +18,7 @@ there is a real number to check against instead of just "it converged".
 
 Why bother
 
-Hydrogen fuel cells already work; the hard part is finding materials that
+Hydrogen fuel cells already work, the hard part is finding materials that
 store hydrogen safely and at useful densities. Designing those materials
 means computing accurate electronic energies, which is where classical
 methods get expensive. VQE is one of the near-term quantum algorithms
@@ -73,8 +73,14 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-PySCF compiles native code on first install, so you need Xcode command
-line tools on macOS, or gcc / gfortran on Linux.
+PySCF compiles native code on first install, so you need a working C and
+Fortran toolchain:
+
+- macOS: `xcode-select --install` (gives clang + gfortran via Homebrew if
+  needed).
+- Debian / Ubuntu: `sudo apt install build-essential gfortran libopenblas-dev`.
+- If the install fails on PySCF, it is almost always a missing compiler,
+  not a Python problem.
 
 
 Run
