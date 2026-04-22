@@ -109,10 +109,11 @@ Branches
 
 There are two long-lived branches:
 
-- `dev` is where work happens. Source files are heavily commented.
-- `main` has the same commits and messages as `dev`, but with comments
-  stripped out. Treat `main` as the clean view and `dev` as the annotated
-  one.
+- `dev` is where work happens. Source files carry detailed, teaching-style
+  comments.
+- `main` has the same commits and messages, but with the comments
+  rewritten short and to the point. Treat `main` as the clean view and
+  `dev` as the annotated one.
 
 
 References
