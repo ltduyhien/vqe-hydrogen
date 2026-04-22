@@ -1,83 +1,41 @@
-# ---------------------------------------------------------------------------
-# requirements.txt for the QuantumH2 (vqe-hydrogen) project.
+# Read by pip at install time, not by Python at runtime.
+#   pip install -r requirements.txt
 #
-# WHEN IS THIS FILE USED?
-#   Only at install time, by pip:
-#       pip install -r requirements.txt
-#   Python code does NOT import this file. It is read by the package
-#   manager, not by the application.
-#
-# WHAT GOES HERE AND WHY?
-#   Every library we `import` from our source code must appear here so that
-#   a fresh clone can be set up reproducibly. We pin LOWER BOUNDS (>=) of
-#   versions that are known to exist, instead of exact pins, because:
-#     - Exact pins (==) break when upstream ships a bugfix.
-#     - No pin at all breaks when upstream ships a breaking change.
-#   For a fully reproducible build, run after install:
-#       pip freeze > requirements.lock
-#   and commit the .lock file alongside this one.
-#
-# CATEGORIES BELOW:
-#   1. Qiskit stack  -- quantum circuits, simulators, algorithms.
-#   2. Chemistry     -- molecular integrals (classical side).
-#   3. Scientific    -- numerics, optimizers, plotting.
-# ---------------------------------------------------------------------------
+# Lower bounds (>=) only. Exact pins break on upstream bugfixes; no pin
+# breaks on upstream breaking changes. For a reproducible build, do
+# `pip freeze > requirements.lock` after install and commit the lock.
 
 
-# ---------------------------------------------------------------------------
-# 1. Qiskit stack
-# ---------------------------------------------------------------------------
+# Qiskit stack
 
-# `qiskit` is the core SDK: QuantumCircuit, parameterized gates, primitives
-# (Estimator/Sampler), transpiler. Everything in our VQE loop ultimately
-# goes through this package.
+# Core SDK: circuits, parameters, primitives (Estimator/Sampler), transpiler.
 qiskit>=1.0
 
-# `qiskit-aer` is the high-performance classical simulator backend. We use
-# it to evaluate expectation values on both ideal and noisy simulators.
-# Required specifically for step 6 of the brief (noise modelling).
+# Aer simulator. Needed for the noise sweep (density-matrix simulation).
 qiskit-aer>=0.14
 
-# `qiskit-algorithms` provides VQE, NumPyMinimumEigensolver, and classical
-# optimizers (COBYLA, SPSA). It was split out of `qiskit` after 0.x, which
-# is why we list it separately.
+# VQE algorithm + COBYLA/SPSA. Split out of qiskit after 0.x.
 qiskit-algorithms>=0.3
 
-# `qiskit-nature` turns a molecule specification (geometry + basis) into a
-# qubit Hamiltonian via second quantization and fermion-to-qubit mappers
-# (Jordan-Wigner, parity). This is the "classical chemistry -> qubit op"
-# bridge. Used only by src/hamiltonian.py.
+# Molecule -> qubit Hamiltonian. Used only by src/hamiltonian.py.
 qiskit-nature>=0.7
 
 
-# ---------------------------------------------------------------------------
-# 2. Chemistry driver
-# ---------------------------------------------------------------------------
+# Classical chemistry driver
 
-# `pyscf` is a classical electronic-structure package. qiskit-nature calls
-# it under the hood to compute one- and two-electron integrals for the
-# molecule. Without a driver, qiskit-nature has no integrals to work with.
-# Note: pyscf may require a C/Fortran toolchain on install; on macOS this
-# is usually satisfied by Xcode command-line tools.
+# Computes 1- and 2-electron integrals for qiskit-nature.
+# Needs a working C/Fortran toolchain at install time.
 pyscf>=2.3
 
 
-# ---------------------------------------------------------------------------
-# 3. Scientific stack
-# ---------------------------------------------------------------------------
+# Scientific stack
 
-# `numpy` is the universal array library; every Qiskit operator and
-# parameter vector ultimately lives in a numpy array.
 numpy>=1.24
 
-# `scipy` provides numerical routines. qiskit-algorithms' optimizers use
-# scipy under the hood for things like COBYLA.
+# Used internally by qiskit-algorithms optimizers.
 scipy>=1.11
 
-# `matplotlib` is used by src/plot.py to draw:
-#   (a) energy-vs-iteration convergence curves, and
-#   (b) final-error-vs-noise-strength curves.
-# Not imported anywhere else. 3.8 is the first version whose `axhline`
-# accepts `label=` consistently on a log axis (we rely on that in
-# plot_noise_sweep), so we pin the floor there instead of 3.7.
+# Used only by src/plot.py.
+# 3.8 is the first version whose axhline(label=...) works reliably on a
+# log axis (needed in plot_noise_sweep).
 matplotlib>=3.8
