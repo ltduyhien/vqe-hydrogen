@@ -1,7 +1,5 @@
 # Noise models + noisy Estimator for the --noise-sweep mode.
 # Only imported by main.py when the sweep runs; ideal VQE never touches this.
-#
-# TODO (next commit): build_noisy_estimator.
 
 from __future__ import annotations
 
@@ -54,3 +52,22 @@ def build_depolarizing_noise_model(params: NoiseParameters):
     model.add_all_qubit_readout_error(ReadoutError(readout_matrix))
 
     return model
+
+
+# Wraps the noise model in an AerEstimator so vqe_runner.run_vqe can take it
+# via its estimator= kwarg -- no changes to the VQE loop itself.
+def build_noisy_estimator(params: NoiseParameters, shots: int = 1024):
+    from qiskit_aer.primitives import Estimator as AerEstimator
+
+    noise_model = build_depolarizing_noise_model(params)
+
+    # density_matrix propagates the full mixed state exactly. O(4^n) memory,
+    # fine up to 6 qubits on a laptop.
+    return AerEstimator(
+        backend_options={
+            "method": "density_matrix",
+            "noise_model": noise_model,
+        },
+        # Finite shots so expectation values carry realistic variance.
+        run_options={"shots": shots},
+    )
