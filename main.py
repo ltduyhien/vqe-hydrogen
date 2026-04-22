@@ -23,13 +23,26 @@ from src.plot import plot_convergence, plot_noise_sweep
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="QuantumH2 - VQE for small hydrogen-storage molecules",
+        prog="python main.py",
+        description=(
+            "QuantumH2: ground-state VQE for small hydrogen-storage "
+            "molecules (H2, LiH, BeH2) on the qiskit-aer simulator."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  python main.py --molecule H2\n"
+            "  python main.py --molecule LiH --optimizer COBYLA --maxiter 200\n"
+            "  python main.py --molecule H2 --noise-sweep"
+        ),
+        # RawDescriptionHelpFormatter keeps the epilog newlines intact.
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--molecule",
         choices=available_molecules(),
         required=True,
-        help="Target molecule: H2, LiH, or BeH2.",
+        metavar="{H2,LiH,BeH2}",
+        help="Target molecule. H2 is the fastest; BeH2 the slowest.",
     )
     # COBYLA is best on ideal, SPSA under noise.
     parser.add_argument(
