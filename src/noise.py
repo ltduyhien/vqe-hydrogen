@@ -1,7 +1,7 @@
 # Noise models + noisy Estimator for the --noise-sweep mode.
 # Only imported by main.py when the sweep runs; ideal VQE never touches this.
 #
-# TODO (next commits): depolarizing model, build_noisy_estimator.
+# TODO (next commit): build_noisy_estimator.
 
 from __future__ import annotations
 
@@ -24,3 +24,33 @@ class NoiseParameters:
 
     def resolved_p_readout(self) -> float:
         return self.p_readout if self.p_readout is not None else self.p2q
+
+
+def build_depolarizing_noise_model(params: NoiseParameters):
+    # Lazy import: qiskit_aer only needed when we actually build a model.
+    from qiskit_aer.noise import NoiseModel, ReadoutError, depolarizing_error
+
+    p1 = params.resolved_p1q()
+    p2 = params.p2q
+    p_ro = params.resolved_p_readout()
+
+    model = NoiseModel()
+
+    # 1q error attached to everything the transpiler might emit for our ansatz.
+    error_1q = depolarizing_error(p1, num_qubits=1)
+    for gate in ("u1", "u2", "u3", "rx", "ry", "rz", "sx", "x", "h"):
+        model.add_all_qubit_quantum_error(error_1q, [gate])
+
+    # 2q error on entanglers.
+    error_2q = depolarizing_error(p2, num_qubits=2)
+    for gate in ("cx", "cz"):
+        model.add_all_qubit_quantum_error(error_2q, [gate])
+
+    # Symmetric bit-flip readout: rows = true state, cols = observed.
+    readout_matrix = [
+        [1 - p_ro, p_ro],
+        [p_ro, 1 - p_ro],
+    ]
+    model.add_all_qubit_readout_error(ReadoutError(readout_matrix))
+
+    return model
