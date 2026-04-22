@@ -77,5 +77,7 @@ scipy>=1.11
 # `matplotlib` is used by src/plot.py to draw:
 #   (a) energy-vs-iteration convergence curves, and
 #   (b) final-error-vs-noise-strength curves.
-# Not imported anywhere else.
-matplotlib>=3.7
+# Not imported anywhere else. 3.8 is the first version whose `axhline`
+# accepts `label=` consistently on a log axis (we rely on that in
+# plot_noise_sweep), so we pin the floor there instead of 3.7.
+matplotlib>=3.8
