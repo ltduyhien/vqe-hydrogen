@@ -51,3 +51,39 @@ def plot_convergence(
     else:
         fig.savefig(out_path, dpi=150)
         plt.close(fig)
+
+
+def plot_noise_sweep(
+    noise_levels: Sequence[float],  # 2q error rates; use a small positive
+                                    # floor (e.g. 1e-5) instead of 0 for the
+                                    # ideal point, log axis wouldn't show it.
+    errors: Sequence[float],        # matching |VQE - FCI|
+    molecule_name: str,
+    out_path: Optional[Path] = None,
+) -> None:
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    ax.plot(noise_levels, errors, marker="o", linewidth=1.5)
+
+    # Errors span several decades, log-log is the only readable scale.
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+
+    ax.set_xlabel("Two-qubit gate error rate p2q")
+    ax.set_ylabel("|VQE - FCI| [Hartree]")
+    ax.set_title(f"VQE accuracy vs noise for {molecule_name}")
+
+    # Chemical accuracy ~ 1.6e-3 Ha, the canonical "success" line.
+    ax.axhline(
+        1.6e-3, color="green", linestyle="--", linewidth=1,
+        label="Chemical accuracy (1.6e-3 Ha)",
+    )
+    ax.legend()
+    ax.grid(which="both", alpha=0.3)
+    fig.tight_layout()
+
+    if out_path is None:
+        plt.show()
+    else:
+        fig.savefig(out_path, dpi=150)
+        plt.close(fig)
