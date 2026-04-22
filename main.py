@@ -18,6 +18,7 @@ from src.hamiltonian import build_qubit_hamiltonian
 from src.ansatz import build_ansatz, recommended_reps
 from src.fci import compute_fci_reference
 from src.vqe_runner import run_vqe
+from src.plot import plot_convergence
 
 
 def parse_args() -> argparse.Namespace:
@@ -71,9 +72,11 @@ def main() -> None:
     spec = get_molecule(args.molecule)
     ham = build_qubit_hamiltonian(spec)
 
-    # --reps wins if given, otherwise pick from qubit count.
     reps = args.reps if args.reps is not None else recommended_reps(ham.num_qubits)
     ansatz = build_ansatz(ham.num_qubits, reps=reps)
+
+    # FCI up front so we have the reference before VQE finishes.
+    fci = compute_fci_reference(ham)
 
     result = run_vqe(
         ham=ham,
@@ -83,11 +86,27 @@ def main() -> None:
         seed=args.seed,
     )
 
-    # FCI comparison + plot saving come in the next commit.
-    print(f"Molecule:   {args.molecule}")
-    print(f"Optimizer:  {args.optimizer}")
-    print(f"VQE energy: {result.energy:.6f} Hartree")
-    print(f"Iterations: {result.num_iterations}")
+    # Chemical accuracy ~ 1.6e-3 Ha is the usual VQE pass/fail line.
+    gap = result.energy - fci.energy
+    pass_flag = "PASS (chemical accuracy)" if abs(gap) < 1.6e-3 else "above chemical accuracy"
+    print(f"Molecule:        {args.molecule}")
+    print(f"Optimizer:       {args.optimizer}")
+    print(f"Iterations:      {result.num_iterations}")
+    print(f"VQE energy:      {result.energy:.6f} Hartree")
+    print(f"FCI energy:      {fci.energy:.6f} Hartree")
+    print(f"VQE - FCI:       {gap:+.6f} Hartree   [{pass_flag}]")
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    plot_path = args.output_dir / f"convergence_{args.molecule}_{args.optimizer}.png"
+    plot_convergence(
+        trace=result.trace,
+        energy_shift=ham.energy_shift,
+        fci_energy=fci.energy,
+        molecule_name=args.molecule,
+        optimizer_name=args.optimizer,
+        out_path=plot_path,
+    )
+    print(f"Plot saved to:   {plot_path}")
 
 
 if __name__ == "__main__":
