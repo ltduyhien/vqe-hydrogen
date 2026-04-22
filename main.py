@@ -18,7 +18,7 @@ from src.hamiltonian import build_qubit_hamiltonian
 from src.ansatz import build_ansatz, recommended_reps
 from src.fci import compute_fci_reference
 from src.vqe_runner import run_vqe
-from src.plot import plot_convergence
+from src.plot import plot_convergence, plot_noise_sweep
 
 
 def parse_args() -> argparse.Namespace:
@@ -62,22 +62,16 @@ def parse_args() -> argparse.Namespace:
         default=Path("outputs"),
         help="Directory for output plots.",
     )
+    # Flips to sweep mode. Always uses SPSA because COBYLA hates shot noise.
+    parser.add_argument(
+        "--noise-sweep",
+        action="store_true",
+        help="Sweep the two-qubit gate error rate and plot |VQE-FCI| vs noise.",
+    )
     return parser.parse_args()
 
 
-def main() -> None:
-    args = parse_args()
-
-    # molecule -> hamiltonian -> ansatz -> VQE
-    spec = get_molecule(args.molecule)
-    ham = build_qubit_hamiltonian(spec)
-
-    reps = args.reps if args.reps is not None else recommended_reps(ham.num_qubits)
-    ansatz = build_ansatz(ham.num_qubits, reps=reps)
-
-    # FCI up front so we have the reference before VQE finishes.
-    fci = compute_fci_reference(ham)
-
+def run_single(args, ham, ansatz, fci) -> None:
     result = run_vqe(
         ham=ham,
         ansatz=ansatz,
@@ -107,6 +101,67 @@ def main() -> None:
         out_path=plot_path,
     )
     print(f"Plot saved to:   {plot_path}")
+
+
+def run_noise_sweep(args, ham, ansatz, fci) -> None:
+    # Local import: noise.py pulls qiskit_aer, only needed on this path.
+    from src.noise import NoiseParameters, build_noisy_estimator
+
+    # Log-spaced: ideal through NISQ-realistic through very noisy.
+    noise_levels = [0.0, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2, 3e-2]
+    errors = []
+
+    for p in noise_levels:
+        print(f"Running VQE at p2q={p}...")
+
+        # p=0 -> ideal Estimator; anything else -> noisy AerEstimator.
+        if p == 0.0:
+            estimator = None
+        else:
+            estimator = build_noisy_estimator(NoiseParameters(p2q=p), shots=1024)
+
+        result = run_vqe(
+            ham=ham,
+            ansatz=ansatz,
+            optimizer_name="SPSA",
+            maxiter=args.maxiter,
+            seed=args.seed,
+            estimator=estimator,
+        )
+
+        gap = abs(result.energy - fci.energy)
+        errors.append(gap)
+        print(f"  energy={result.energy:.6f} Ha, |VQE-FCI|={gap:.2e} Ha")
+
+    # Log-x choke on 0.0; nudge to a tiny positive number for plotting.
+    plot_levels = [max(p, 1e-5) for p in noise_levels]
+
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    plot_path = args.output_dir / f"noise_sweep_{args.molecule}.png"
+    plot_noise_sweep(
+        noise_levels=plot_levels,
+        errors=errors,
+        molecule_name=args.molecule,
+        out_path=plot_path,
+    )
+    print(f"Noise sweep plot: {plot_path}")
+
+
+def main() -> None:
+    args = parse_args()
+
+    # Shared setup: molecule -> hamiltonian -> ansatz -> FCI,
+    # then dispatch to single or sweep.
+    spec = get_molecule(args.molecule)
+    ham = build_qubit_hamiltonian(spec)
+    reps = args.reps if args.reps is not None else recommended_reps(ham.num_qubits)
+    ansatz = build_ansatz(ham.num_qubits, reps=reps)
+    fci = compute_fci_reference(ham)
+
+    if args.noise_sweep:
+        run_noise_sweep(args, ham, ansatz, fci)
+    else:
+        run_single(args, ham, ansatz, fci)
 
 
 if __name__ == "__main__":
