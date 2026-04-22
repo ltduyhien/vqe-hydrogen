@@ -1,5 +1,17 @@
 # Noise models + noisy Estimator for the --noise-sweep mode.
 # Only imported by main.py when the sweep runs; ideal VQE never touches this.
+#
+# Noise model = error channels attached to gates. We care about two:
+#   - depolarizing error on 1q and 2q gates (probability p of scrambling the qubit),
+#   - symmetric readout flip (observed bit differs from the true one).
+#
+# Why one dial instead of many: real devices expose T1, T2, per-gate, per-qubit
+# readout, etc. Sweeping all of them is a surface you cannot read. We pin the
+# 2q rate as the knob and let 1q and readout derive from it, so the sweep
+# gives a single curve: accuracy vs. 2q noise.
+#
+# What this does NOT do: run VQE, know anything about molecules or ansatz.
+# It only hands back an Estimator for vqe_runner to plug in.
 
 from __future__ import annotations
 
