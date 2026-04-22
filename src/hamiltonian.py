@@ -19,7 +19,9 @@ class QubitHamiltonian:
     qubit_op: SparsePauliOp
     num_qubits: int
     num_particles: tuple[int, int]   # (alpha, beta) in the active space
-    energy_shift: float              # Hartree; add to any eigenvalue for total energy
+    energy_shift: float              # Hartree; add to any eigenvalue for total energy.
+                                     # VQE itself never sees this (it only reads qubit_op),
+                                     # keeping it separate avoids double-counting downstream.
 
 
 def build_qubit_hamiltonian(spec: MoleculeSpec) -> QubitHamiltonian:
